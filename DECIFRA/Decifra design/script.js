@@ -1,38 +1,52 @@
-const palavra = "SORTE";  // Palavra correta
-
-
-
+const palavra = "ALEXA";  // Palavra correta
 
 const inputs = document.querySelectorAll('input');
 let tentativa = 0;
 const btnEnviar = document.querySelector('#submitGuess');
 
-// Função para desabilitar todos os inputs
-function desabilitarTodosInputs() {
+// Configurar os inputs na inicialização
+function configurarInputs() {
     inputs.forEach(input => {
         input.disabled = true;
-        input.setAttribute('pattern','[A-Za-zÀ-ÿ]*');
-        input.setAttribute('title','Números não são permitidos');
-        input.addEventListener('input', function() {
-            this.value = this.value.replace(/[^A-Za-zÀ-ÿ]/g, ''); // Remove números digitados
-        });
+        input.setAttribute('pattern', '[A-Za-zÀ-ÿ]*');
+        input.setAttribute('title', 'Somente letras são permitidas');
         
+        // Remover números automaticamente e pular para o próximo input
+        input.addEventListener('input', () => {
+            input.value = input.value.replace(/[^A-Za-zÀ-ÿ]/g, '');
+            if (input.value.length === 1) focarProximoInput(input);
+        });
     });
 }
 
-// Função para habilitar a linha atual
-function habilitarLinha(tentativaAtual) {
-    const startIndex = tentativaAtual * 5;
-    const endIndex = startIndex + 5;
+// Focar no próximo input ou voltar ao anterior com Backspace
+function focarProximoInput(inputAtual) {
+    const index = Array.from(inputs).indexOf(inputAtual);
+    if (index < inputs.length - 1) inputs[index + 1].focus();
+}
 
+// Focar input anterior ao apagar com Backspace
+function voltarInputAnterior(event, index) {
+    if (event.key === 'Backspace' && inputs[index].value === '' && index > 0) {
+        inputs[index - 1].focus();
+    }
+}
+
+// Desabilitar todos os inputs e habilitar apenas a linha da tentativa atual
+function habilitarLinhaAtual() {
+    inputs.forEach(input => (input.disabled = true));
+    const startIndex = tentativa * 5;
+    const endIndex = startIndex + 5;
     for (let i = startIndex; i < endIndex; i++) {
         inputs[i].disabled = false;
-        inputs[i].setAttribute('pattern','[A-Za-zÀ-ÿ]*');
-        
-        inputs[i].setAttribute('title', 'Somente letras são permitidas');
-        
+        inputs[i].addEventListener('keydown', detectarEnter);
     }
+    inputs[startIndex].focus();
+}
 
+// Detectar a tecla Enter
+function detectarEnter(event) {
+    if (event.key === 'Enter') enviarResposta();
 }
 
 // Função para enviar a resposta
@@ -40,99 +54,41 @@ function enviarResposta() {
     const inputInicial = tentativa * 5;
     let palavraTentada = '';
 
-    // Montar a palavra tentada e verificar se todos os campos estão preenchidos
-    for (let i = inputInicial; i < (inputInicial + 5); i++) {
-        if (!inputs[i].value) {
-            alert('Preencha todos os campos!');
-            return;
-        }
+    for (let i = inputInicial; i < inputInicial + 5; i++) {
+        if (!inputs[i].value) return alert('Preencha todos os campos!');
         palavraTentada += inputs[i].value.toUpperCase();
     }
 
-    // Aplicar animação de giro com atraso incremental
-    for (let i = 0; i < 5; i++) {
-        const input = inputs[inputInicial + i];
-        input.style.animationDelay = `${i * 300}ms`;  // Atraso incremental
-        input.classList.add('spin');  // Adiciona classe de animação
-    }
+    // Aplicar animação de giro
+    Array.from(inputs).slice(inputInicial, inputInicial + 5).forEach((input, i) => {
+        input.style.animationDelay = `${i * 210}ms`;
+        input.classList.add('spin');
+    });
 
-    // Esperar a animação de giro antes de verificar as letras
+    // Verificar letras após a animação
     setTimeout(() => {
         for (let i = 0; i < 5; i++) {
-            const letraTentada = palavraTentada[i];
             const input = inputs[inputInicial + i];
-
-            if (letraTentada === palavra[i]) {
-                input.style.backgroundColor = 'green';
-            } else if (palavra.includes(letraTentada)) {
-                input.style.backgroundColor = 'orange';
-            } else {
-                input.style.backgroundColor = 'gray';
-            }
+            input.style.backgroundColor = palavra[i] === palavraTentada[i] ? 'green' : 
+                                           palavra.includes(palavraTentada[i]) ? 'orange' : 'gray';
         }
 
-        tentativa++;
-
-        // Verificar vitória ou término do jogo
         if (palavraTentada === palavra) {
-            // Mostrar a palavra correta toda em verde
-            for (let i = inputInicial; i < (inputInicial + 5); i++) {
-                inputs[i].style.backgroundColor = 'green';
-            }
-
-            // Exibir o pop-up após 1 segundo
-            setTimeout(() => {
-                alert('Você acertou!');
-                btnEnviar.disabled = true;
-            }, 1000);
-        } else if (tentativa === 6) {
-            alert('A palavra era '+palavra);
+            setTimeout(() => alert('Você acertou!'), 1000);
+            btnEnviar.disabled = true;
+        } else if (++tentativa === 5) {
+            alert(`A palavra era ${palavra}`);
             btnEnviar.disabled = true;
         } else {
-            // Desabilitar a linha atual e habilitar a próxima linha
-            desabilitarTodosInputs();
-            habilitarLinha(tentativa);
-
-            // Focar no primeiro input da nova linha
-            const firstInputOfNextLine = inputs[tentativa * 5];
-            if (firstInputOfNextLine) {
-                firstInputOfNextLine.focus();
-            }
+            habilitarLinhaAtual();
         }
-    }, 1000);  // Tempo da animação de giro
+    }, 1600);
 }
 
+// Eventos de controle dos inputs
 btnEnviar.addEventListener('click', enviarResposta);
+inputs.forEach((input, index) => input.addEventListener('keydown', event => voltarInputAnterior(event, index)));
 
-// Adicionar evento de "Enter" para enviar resposta
-inputs.forEach(input => {
-    input.addEventListener('keydown', function(event) {
-        if (event.key === 'Enter') {
-            enviarResposta();
-        }
-    });
-});
-
-// Adicionar evento de foco automático ao digitar
-inputs.forEach((input, index) => {
-    input.addEventListener('input', () => {
-        if (input.value.length === 1 && index < inputs.length - 1) {
-            inputs[index + 1].focus();  // Pular para o próximo input
-        }
-    });
-});
-inputs.forEach((input, index) => {
-    input.addEventListener('keydown', function(event) {
-        if (event.key === 'Backspace' && input.value === '') {
-            if (index > 0) {
-                inputs[index - 1].focus();
-                inputs[index - 1].value = '';  // Apaga o valor do campo anterior
-            }
-        } else if (event.key === 'Enter') {
-            enviarResposta();
-        }
-    });
-});
-// Inicializar jogo desabilitando todos os inputs e habilitando a primeira linha
-desabilitarTodosInputs();
-habilitarLinha(0);
+// Inicializar o jogo
+configurarInputs();
+habilitarLinhaAtual();

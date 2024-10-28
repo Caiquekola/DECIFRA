@@ -11,15 +11,30 @@ body {
   font-family: 'Poppins', sans-serif;
   margin: 0; 
 }
+
+header {
+  margin-top: 2rem;
+  display: flex;
+  justify-content:center;
+  gap: 10rem;
+  align-items: center;
+  padding: 0 2rem;
+  color: rgb(214, 155, 26);
+}
+
+
+
+/*
 header {
   margin-top: 2rem;
   gap: 9rem;
   display: flex;
-  justify-content: center; /* Espaça os elementos entre a esquerda e a direita */
-  align-items: center; /* Centraliza os itens verticalmente */
+  justify-content: center; 
+  align-items: center; 
   justify-content:center;
   color: rgb(214, 155, 26);
 }
+*/
 
 .tituloInputs {
   display: flex;
@@ -41,7 +56,7 @@ header {
 }
 
 .container-termoo h1 {
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .container-inputs {
@@ -52,14 +67,14 @@ header {
 }
 
 .container-inputs input {
-  width: 70px;
-  height: 70px;
+  width: 50px;
+  height: 50px;
   text-align: center;
   margin: 0 5px;
   background-color: #5c5757;
   color: white;
   border-radius: 5px;
-  font-size: 50px;
+  font-size: 30px;
   text-transform: uppercase;
   font-weight: 700;
 }
@@ -69,13 +84,14 @@ header {
   align-items: center;
 }
 button {
+  font-weight: 900;
   height: 50px;
   width: 120px;
   background: #333;
   cursor: pointer;
-  font-family: Consolas, Courier New, monospace;
+  font-family: "Consolas", Courier New, monospace;
   border: solid #404c5d 1px;
-  font-size: 16px;
+  font-size: 18px;
   color: rgb(161, 161, 161);
   transition: 500ms;
   border-radius: 5px;
