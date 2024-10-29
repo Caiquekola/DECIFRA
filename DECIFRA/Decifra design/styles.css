@@ -4,25 +4,48 @@
   box-sizing: border-box;
 }
 
+
 body {
   background-color: #212121;
   color: #fff;
   font-weight: 700;
   font-family: 'Poppins', sans-serif;
-  margin: 0; 
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+  background-color: #212121;
+  color: #fff;
+  font-weight: 700;
+  font-family: 'Poppins', sans-serif; 
 }
 
 header {
-  margin-top:  1rem;
+  margin-top: 1%;
   display: flex;
-  justify-content:center;
+  justify-content: center;
   gap: 6.5rem;
   align-items: center;
   padding: 0 2rem;
   color: rgb(214, 155, 26);
 }
 
-
+.config {
+  display: flex;
+  position: absolute;
+  align-items: center;
+  justify-content: center;
+  top: 50%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  height: 80%;
+  width: 60%;
+  opacity: 0.3;
+  background: #da8320;
+  
+}
 
 /*
 header {
@@ -38,17 +61,19 @@ header {
 
 .tituloInputs {
   display: flex;
-  align-items: center; /* Centraliza verticalmente */
+  align-items: center;
+  /* Centraliza verticalmente */
   justify-content: center;
   flex-direction: column;
   align-items: center;
 }
 
 .container-termoo {
+  
   align-items: center;
   background-color: #212121;
   border-radius: 10px;
-  display:flex;
+  display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -78,11 +103,13 @@ header {
   text-transform: uppercase;
   font-weight: 700;
 }
-.button-container{
+
+.button-container {
   display: flex;
   justify-content: center;
   align-items: center;
 }
+
 button {
   font-weight: 900;
   height: 50px;
@@ -113,14 +140,20 @@ button:active {
 
 input:focus {
   border-bottom: 4px solid #FF5722;
-  outline: none; /* Remove o contorno padrão do navegador */
+  outline: none;
+  /* Remove o contorno padrão do navegador */
 }
 
 
 /* Animação de giro */
 @keyframes spinAnimation {
-  0% { transform: rotateY(0deg); }
-  100% { transform: rotateY(360deg); }
+  0% {
+    transform: rotateY(0deg);
+  }
+
+  100% {
+    transform: rotateY(360deg);
+  }
 }
 
 .container-inputs input.spin {
@@ -131,7 +164,3 @@ input:focus {
 .container-inputs input {
   animation-delay: 0ms;
 }
-
-
-
-
