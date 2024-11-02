@@ -19,30 +19,16 @@ body {
 
 header {
   position: fixed;
-  top: 1%;  
-  left: 1%;
+  top: 1rem;  
   display: flex;
   justify-content: center;
-  gap: 5%;
+  gap: 8rem;
   align-items: center;
   padding: 0 2rem;
   color: rgb(214, 155, 26);
 }
 
-.config {
-  display: flex;
-  position: absolute;
-  align-items: center;
-  justify-content: center;
-  top: 50%;
-  left: 50%;
-  transform: translateX(-50%) translateY(-50%);
-  height: 80%;
-  width: 60%;
-  opacity: 0.3;
-  background: #da8320;
-  
-}
+
 
 /*
 header {
@@ -160,4 +146,48 @@ input:focus {
 
 .container-inputs input {
   animation-delay: 0ms;
+}
+
+
+
+
+/*Settings Button*/
+.config {
+  /* visibility: hidden;
+  display: none; */
+  display: flex;
+  position: absolute;
+  align-items: center;
+  justify-content: center;
+  top: 50%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  height: 90%;
+  width: 90%;
+  background: #da8320;
+  z-index: 1000;
+  font-size: 400%;
+  flex-direction: column; /* Alinha os elementos internamente de forma vertical */
+  opacity: 0.3;
+}
+
+
+
+.contrast-text {
+  position: relative;
+  z-index: 1000;
+  position: fixed;
+  top: 10%;
+  left: 5%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  
+}
+
+contrastButton{
+  width: 100%;
+  height: 100%;
+  color: #fff;
 }
