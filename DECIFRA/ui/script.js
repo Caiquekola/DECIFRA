@@ -92,3 +92,4 @@ inputs.forEach((input, index) => input.addEventListener('keydown', event => volt
 // Inicializar o jogo
 configurarInputs();
 habilitarLinhaAtual();
+
