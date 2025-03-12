@@ -1,4 +1,5 @@
 import React, { useState, useEffect, KeyboardEvent } from 'react';
+import Header from '../components/header';
 
 const palavra = 'ALEXA';
 
@@ -45,7 +46,9 @@ const Decifra: React.FC = () => {
   };
 
   return (
+    
     <div className="container">
+      <Header></Header>
       {Array.from({ length: 5 }).map((_, rowIndex) => (
         <div className="linha" key={rowIndex}>
           {Array.from({ length: 5 }).map((_, colIndex) => {

@@ -1,0 +1,15 @@
+body {
+    min-height: 100vh;
+    background-color: #212121;
+    font-weight: 700;
+    font-family: 'Poppins', sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* h1{
+    font-size: 2rem;
+    color: black;
+    text-shadow: 2px 2px 2px rgb(192, 99, 23);
+} */

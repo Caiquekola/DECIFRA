@@ -1,0 +1,41 @@
+footer{
+    background-color: #000000;
+    color: #fff;
+    text-align: center;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    font-size: 12px;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 300;
+    letter-spacing: 1px;
+    z-index: 999;
+    margin: 0;
+    padding: 0;
+}
+
+a{
+    text-decoration: none;
+    color: orange;
+}
+
+h1:hover{
+  transform: scale(1.1);
+}
+
+a:link{
+    text-decoration: none;
+    color: orange;
+}
+
+a:visited{
+    text-decoration: none;
+    color: orange;
+}
+
+
+
+h2 a{
+  font-size: 10px;
+  color: white;
+}

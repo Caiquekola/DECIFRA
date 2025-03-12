@@ -1,0 +1,17 @@
+header {
+    top: 1rem;  
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8rem;
+    padding-top: 2rem;
+    color: rgb(214, 155, 26);
+}
+
+svg{
+  cursor: pointer;
+}
+
+svg:hover{
+  transform: scale(1.1);
+}

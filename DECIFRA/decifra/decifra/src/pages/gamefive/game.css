@@ -1,0 +1,105 @@
+.tituloInputs {
+    display: flex;
+    align-items: center;
+    /* Centraliza verticalmente */
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .container-termoo {
+    
+    align-items: center;
+    background-color: #212121;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .container-termoo h1 {
+    padding: 0.7rem;
+    text-shadow: 2px 2px 2px rgb(192, 99, 23);
+  }
+  
+  .container-inputs {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .container-inputs input {
+    width: 50px;
+    height: 50px;
+    text-align: center;
+    margin: 0 5px;
+    background-color: #5c5757;
+    color: white;
+    border-radius: 5px;
+    font-size: 30px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  
+  .button-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  button {
+    font-weight: 900;
+    height: 50px;
+    width: 18.3rem;
+    background: #333;
+    cursor: pointer;
+    font-family: "Consolas", Courier New, monospace;
+    border: solid #404c5d 1px;
+    font-size: 18px;
+    color: rgb(161, 161, 161);
+    transition: 500ms;
+    border-radius: 5px;
+    background: linear-gradient(145deg, #2e2d2d, #212121);
+    box-shadow: -1px -5px 15px #b86d18, 5px 5px 15px #b86d18,
+      inset 5px 5px 10px #212121, inset -5px -5px 10px #212121;
+  }
+  
+  button:hover {
+    box-shadow: 1px 1px 13px #20232e, -1px -1px 13px #a76d16;
+    color: #d6d6d6;
+    transform: scale(102%);
+  }
+  
+  button:active {
+    box-shadow: 1px 1px 13px #20232e, -1px -1px 33px #da8320;
+    color: #d6d6d6;
+  }
+  
+  input:focus {
+    border-bottom: 4px solid #FF5722;
+    outline: none;
+    /* Remove o contorno padrão do navegador */
+  }
+  
+  
+  /* Animação de giro */
+  @keyframes spinAnimation {
+    0% {
+      transform: rotateY(0deg);
+    }
+  
+    100% {
+      transform: rotateY(360deg);
+    }
+  }
+  
+  .container-inputs input.spin {
+    animation: spinAnimation 1s ease-in-out;
+    animation-fill-mode: forwards;
+  }
+  
+  .container-inputs input {
+    animation-delay: 0ms;
+  }
