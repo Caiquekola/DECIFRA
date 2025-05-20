@@ -1,36 +1,28 @@
-.tituloInputs {
+.container {
     display: flex;
-    align-items: center;
-    /* Centraliza verticalmente */
     justify-content: center;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .container-termoo {
-    
     align-items: center;
     background-color: #212121;
     border-radius: 10px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-  }
+}
+
+.header{
+  color: white;
+  padding: 0.7rem;
+  text-shadow: 2px 2px 2px rgb(192, 99, 23);
+}
   
-  .container-termoo h1 {
-    padding: 0.7rem;
-    text-shadow: 2px 2px 2px rgb(192, 99, 23);
-  }
-  
-  .container-inputs {
+.game-container {
     display: flex;
     justify-content: center;
     align-items: center;
     margin-bottom: 1rem;
-  }
+}
   
-  .container-inputs input {
+.game-input {
     width: 50px;
     height: 50px;
     text-align: center;
@@ -41,7 +33,7 @@
     font-size: 30px;
     text-transform: uppercase;
     font-weight: 700;
-  }
+}
   
   .button-container {
     display: flex;
