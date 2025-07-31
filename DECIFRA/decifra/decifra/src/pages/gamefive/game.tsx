@@ -16,6 +16,7 @@ function Game(): React.ReactElement {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [focusEnabled,setFocusEnable] = useState(true);
   const [keyboardStatus, setKeyboardStatus] = useState<{ [key: string]: string }>({});
   const inputRefs = useRef<(HTMLInputElement | null)[][]>(
     Array(MAX_ATTEMPTS)
@@ -83,6 +84,7 @@ function Game(): React.ReactElement {
 
     if (key === 'Enter' && currentIndex === WORD_LENGTH) {
       const guess = newGuesses[currentAttempt].join('');
+      setFocusEnable(false);
       if (guess.length === WORD_LENGTH) {
         const rowStatuses: string[] = [];
         const newKeyboardStatus = { ...keyboardStatus };
@@ -118,7 +120,9 @@ function Game(): React.ReactElement {
                 const nextAttempt = currentAttempt + 1;
                 setCurrentAttempt(nextAttempt);
                 setCurrentIndex(0);
-                setTimeout(() => focusInput(nextAttempt, 0), 10); // foca no próximo input
+                setTimeout(() => focusInput(nextAttempt, 0), 10); 
+                setFocusEnable(true);
+
               }, 1600);
               
         }
@@ -158,11 +162,6 @@ function Game(): React.ReactElement {
     alert('Resultado copiado!');
   };
 
-  const keyboardRows = [
-    'QWERTYUIOP'.split(''),
-    'ASDFGHJKL'.split(''),
-    ['Z', 'X', 'C', 'V', 'B', 'N', 'M'],
-  ];
 
   return (
     <div className="container-termoo">
@@ -181,12 +180,11 @@ function Game(): React.ReactElement {
                 ref={(el) => {
                     inputRefs.current[rowIndex][colIndex] = el;
                   }}
-                className={`letter-box ${status} ${status ? 'spin' : ''}`}
+                className={`letter-box ${status} ${status ? 'spin' : ''} ${focusEnabled ? 'focus-visible' : ''}`}
                 style={{ animationDelay: delay }}
                 value={letter}
                 readOnly={!isActiveRow}
                 onFocus={(e) => {
-                  // só permite foco no campo correto
                   if (!isActiveRow) e.target.blur();
                 }}
               />
@@ -195,7 +193,7 @@ function Game(): React.ReactElement {
         </div>
       ))}
     </div>
-
+      {/* TODO: Quando o usuário digita está indo para o primeiro campo */}
     <div className="keyboard">
   <div className="keyboard-row">
     {'QWERTYUIOP'.split('').map((key) => {

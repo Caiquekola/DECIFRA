@@ -1,5 +1,5 @@
 footer{
-    background-color: #000000;
+    background-color: #212121;
     color: #fff;
     text-align: center;
     position: fixed;
@@ -16,7 +16,7 @@ footer{
 
 a{
     text-decoration: none;
-    color: orange;
+    color: white;
 }
 
 h1:hover{
