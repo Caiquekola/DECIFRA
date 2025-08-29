@@ -1,5 +1,4 @@
 footer{
-    background-color: #212121;
     color: #fff;
     text-align: center;
     position: fixed;
@@ -19,14 +18,28 @@ a{
     color: white;
 }
 
-h1:hover{
-  transform: scale(1.1);
+footer ul li a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem; }
+
+
+footer ul{
+  list-style:none;
+  display: flex;
+  flex-direction: row;
+  justify-content:space-between;
+  margin: 0px 1rem 0.3rem 1rem;
+  font-size: 1rem;
 }
+
 
 a:link{
     text-decoration: none;
     color: orange;
 }
+
+
 
 a:visited{
     text-decoration: none;

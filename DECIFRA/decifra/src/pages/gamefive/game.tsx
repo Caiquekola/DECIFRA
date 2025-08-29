@@ -9,6 +9,9 @@ function Game(): React.ReactElement {
   const [guesses, setGuesses] = useState<string[][]>(
     Array(MAX_ATTEMPTS).fill(null).map(() => Array(WORD_LENGTH).fill(''))
   );
+  const [flips, setFlips] = useState<boolean[][]>(
+    Array(MAX_ATTEMPTS).fill(null).map(() => Array(WORD_LENGTH).fill(false))
+  );
   const [statuses, setStatuses] = useState<string[][]>(
     Array(MAX_ATTEMPTS).fill(null).map(() => Array(WORD_LENGTH).fill(''))
   );
@@ -16,7 +19,7 @@ function Game(): React.ReactElement {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [focusEnabled,setFocusEnable] = useState(true);
+  const [focusEnabled, setFocusEnable] = useState(true);
   const [keyboardStatus, setKeyboardStatus] = useState<{ [key: string]: string }>({});
   const inputRefs = useRef<(HTMLInputElement | null)[][]>(
     Array(MAX_ATTEMPTS)
@@ -49,10 +52,15 @@ function Game(): React.ReactElement {
     return () => window.removeEventListener('keydown', handleKeyDown);
   });
 
+  const norm = (ch: string) =>
+    ch.normalize('NFD').replace(/\p{Diacritic}/gu, '').toUpperCase();
+
   const getStatus = (letter: string, index: number): string => {
-    const correctLetter = TARGET_WORD[index];
-    if (letter === correctLetter) return 'correct';
-    if (TARGET_WORD.includes(letter)) return 'present';
+    const l = norm(letter);
+    const target = TARGET_WORD.split('').map(norm).join('');
+    const correctLetter = target[index];
+    if (l === correctLetter) return 'correct';
+    if (target.includes(l)) return 'present';
     return 'absent';
   };
 
@@ -85,55 +93,109 @@ function Game(): React.ReactElement {
     if (key === 'Enter' && currentIndex === WORD_LENGTH) {
       const guess = newGuesses[currentAttempt].join('');
       setFocusEnable(false);
+
       if (guess.length === WORD_LENGTH) {
+        // 1) Pré-calcula os statuses da linha
         const rowStatuses: string[] = [];
-        const newKeyboardStatus = { ...keyboardStatus };
+        const norm = (ch: string) =>
+          ch.normalize('NFD').replace(/\p{Diacritic}/gu, '').toUpperCase();
+        const targetNorm = TARGET_WORD.split('').map(norm).join('');
+
+        const getStatusDelayed = (letter: string, index: number): string => {
+          const l = norm(letter);
+          const correctLetter = targetNorm[index];
+          if (l === correctLetter) return 'correct';
+          if (targetNorm.includes(l)) return 'present';
+          return 'absent';
+        };
 
         for (let i = 0; i < WORD_LENGTH; i++) {
-          const status = getStatus(guess[i], i);
-          rowStatuses[i] = status;
-
-          const current = newKeyboardStatus[guess[i]];
-
-          // Prioridade: correct > present > absent
-          if (
-            status === 'correct' ||
-            (status === 'present' && current !== 'correct') ||
-            (status === 'absent' && !current)
-          ) {
-            newKeyboardStatus[guess[i]] = status;
-          }
+          rowStatuses[i] = getStatusDelayed(guess[i], i);
         }
 
-        newStatuses[currentAttempt] = rowStatuses;
-        setStatuses(newStatuses);
-        setKeyboardStatus(newKeyboardStatus);
+        const STEP = 600;       // intervalo entre as letras (ms)
+        const FLIP_TIME = 600;  // duração do flip; combine com o CSS (.spin)
 
-        if (guess === TARGET_WORD) {
-          setTimeout(() => setShowModal(true), 1600);
-          setGameOver(true);
-        } else if (currentAttempt === MAX_ATTEMPTS - 1) {
-          alert(`Fim de jogo! A palavra era ${TARGET_WORD}`);
-          setGameOver(true);
-        } else {
+        /* limpa a linha antes de revelar */
+        setStatuses((prev) => {
+          const copy = prev.map((r) => [...r]);
+          copy[currentAttempt] = Array(WORD_LENGTH).fill('');
+          return copy;
+        });
+
+        /* garante flips false antes de começar */
+        setFlips((prev) => {
+          const copy = prev.map((r) => [...r]);
+          copy[currentAttempt] = Array(WORD_LENGTH).fill(false);
+          return copy;
+        });
+
+        for (let i = 0; i < WORD_LENGTH; i++) {
+          const delay = i * STEP;
+
+          setTimeout(() => {
+            // 1) Inicia o flip dessa célula
+            setFlips((prev) => {
+              const copy = prev.map((r) => [...r]);
+              copy[currentAttempt][i] = true;
+              return copy;
+            });
+
+            // 2) Quando o flip terminar, aplica a cor e atualiza teclado
             setTimeout(() => {
-                const nextAttempt = currentAttempt + 1;
-                setCurrentAttempt(nextAttempt);
-                setCurrentIndex(0);
-                setTimeout(() => focusInput(nextAttempt, 0), 10); 
-                setFocusEnable(true);
+              // para o flip
+              setFlips((prev) => {
+                const copy = prev.map((r) => [...r]);
+                copy[currentAttempt][i] = false;
+                return copy;
+              });
 
-              }, 1600);
-              
+              // aplica a cor (status) APÓS flip
+              setStatuses((prev) => {
+                const copy = prev.map((r) => [...r]);
+                copy[currentAttempt][i] = rowStatuses[i];
+                return copy;
+              });
+
+              // teclado (mesma lógica de prioridade)
+              const k = norm(guess[i]);
+              const s = rowStatuses[i];
+              setKeyboardStatus((prev) => {
+                const cur = prev[k];
+                if (s === 'correct' || (s === 'present' && cur !== 'correct') || (s === 'absent' && !cur)) {
+                  return { ...prev, [k]: s };
+                }
+                return prev;
+              });
+
+              // 3) Depois da última letra “terminar”, segue o jogo
+              if (i === WORD_LENGTH - 1) {
+                setTimeout(() => {
+                  if (guess === TARGET_WORD) {
+                    setShowModal(true);
+                    setGameOver(true);
+                  } else if (currentAttempt === MAX_ATTEMPTS - 1) {
+                    alert(`Fim de jogo! A palavra era ${TARGET_WORD}`);
+                    setGameOver(true);
+                  } else {
+                    const nextAttempt = currentAttempt + 1;
+                    setCurrentAttempt(nextAttempt);
+                    setCurrentIndex(0);
+                    setTimeout(() => focusInput(nextAttempt, 0), 10);
+                    setFocusEnable(true);
+                  }
+                }, 0);
+              }
+            }, FLIP_TIME);
+          }, delay);
         }
       }
     }
-  };
-
+  }
   const handleVirtualKey = (key: string) => {
     if (key === '⌫') {
       handleKeyPress('Backspace');
-    } else if (key === '↵') {
+    } else if (key === '↪') {
       handleKeyPress('Enter');
     } else {
       handleKeyPress(key);
@@ -163,88 +225,87 @@ function Game(): React.ReactElement {
   };
 
 
+
   return (
     <div className="container-termoo">
-    <h1>Decifra</h1>
-    <div className="tituloInputs">
-      {guesses.map((row, rowIndex) => (
-        <div className="container-inputs" key={rowIndex}>
-          {row.map((letter, colIndex) => {
-            const isActiveRow = rowIndex === currentAttempt;
-            const status = statuses[rowIndex][colIndex];
-            const delay = `${colIndex * 300}ms`;
-            return (
-              <input
-                key={colIndex}
-                type="text"
-                ref={(el) => {
+      <div className="tituloInputs">
+        {guesses.map((row, rowIndex) => (
+          <div className="container-inputs" key={rowIndex}>
+            {row.map((letter, colIndex) => {
+              const status = statuses[rowIndex][colIndex];
+              const isActiveRow = rowIndex === currentAttempt;
+              return (
+                <input
+                  key={colIndex}
+                  type="text"
+                  ref={(el) => {
                     inputRefs.current[rowIndex][colIndex] = el;
                   }}
-                className={`letter-box ${status} ${status ? 'spin' : ''} ${focusEnabled ? 'focus-visible' : ''}`}
-                style={{ animationDelay: delay }}
-                value={letter}
-                readOnly={!isActiveRow}
-                onFocus={(e) => {
-                  if (!isActiveRow) e.target.blur();
-                }}
-              />
+                  className={`letter-box ${status} ${flips[rowIndex][colIndex] ? 'spin' : ''} ${focusEnabled ? 'focus-visible' : ''} ${isActiveRow ? 'active-row' : ''}`}
+                  value={letter}
+                  readOnly={!isActiveRow}
+                  onFocus={(e) => {
+                    if (!isActiveRow) e.target.blur();
+                  }}
+                  
+                />
+              );
+            })}
+          </div>
+        ))}
+      </div>
+      {/* TODO: Quando o usuário digita está indo para o primeiro campo */}
+      <div className="keyboard">
+        <div className="keyboard-row">
+          {'QWERTYUIOP'.split('').map((key) => {
+            const status = keyboardStatus[norm(key)];
+            return (
+              <button
+                key={key}
+                className={`key ${status || ''}`}
+                onClick={() => handleVirtualKey(key)}
+              >
+                {key}
+              </button>
             );
           })}
         </div>
-      ))}
-    </div>
-      {/* TODO: Quando o usuário digita está indo para o primeiro campo */}
-    <div className="keyboard">
-  <div className="keyboard-row">
-    {'QWERTYUIOP'.split('').map((key) => {
-      const status = keyboardStatus[key.toUpperCase()];
-      return (
-        <button
-          key={key}
-          className={`key ${status || ''}`}
-          onClick={() => handleVirtualKey(key)}
-        >
-          {key}
-        </button>
-      );
-    })}
-  </div>
 
-  <div className="keyboard-row">
-    {'ASDFGHJKL'.split('').map((key) => {
-      const status = keyboardStatus[key.toUpperCase()];
-      return (
-        <button
-          key={key}
-          className={`key ${status || ''}`}
-          onClick={() => handleVirtualKey(key)}
-        >
-          {key}
-        </button>
-      );
-    })}
-  </div>
+        <div className="keyboard-row">
+          {'ASDFGHJKL'.split('').map((key) => {
+            const status = keyboardStatus[norm(key)];
+            return (
+              <button
+                key={key}
+                className={`key ${status || ''}`}
+                onClick={() => handleVirtualKey(key)}
+              >
+                {key}
+              </button>
+            );
+          })}
+        </div>
 
-  <div className="keyboard-row">
-    <button className="key wide" onClick={() => handleVirtualKey('↪')}>↪</button>
-    {'ZXCVBNM'.split('').map((key, i) => {
-      const status = keyboardStatus[key.toUpperCase()];
-      return (
-        <React.Fragment key={key}>
-          <button
-            className={`key ${status || ''}`}
-            onClick={() => handleVirtualKey(key)}
-          >
-            {key}
-          </button>
-          {key === 'M' && (
-            <button className="key wide" onClick={() => handleVirtualKey('⌫')}>⌫</button>
-          )}
-        </React.Fragment>
-      );
-    })}
-  </div>
-</div>
+        <div className="keyboard-row">
+          <button className="key wide" onClick={() => handleVirtualKey('↪')}>↪</button>
+          {'ZXCVBNM'.split('').map((key, i) => {
+            const status = keyboardStatus[norm(key)];
+            return (
+              <React.Fragment key={key}>
+                <button
+                  className={`key ${status || ''}`}
+                  onClick={() => handleVirtualKey(key)}
+                >
+                  {key}
+                </button>
+                {key === 'M' && (
+                  <button className="key wide" onClick={() => handleVirtualKey('⌫')}>⌫</button>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      </div>
 
       {showModal && (
         <div className="modal">

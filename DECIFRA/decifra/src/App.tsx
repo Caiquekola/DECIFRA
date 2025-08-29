@@ -5,14 +5,16 @@ import Header from './pages/header/header'
 
 
 function App() {
-
   return (
-    <>
+    <div className="app-container">
       <Header />
-      <Game />
+      <main className="app-main">
+        <Game />
+      </main>
       <Footer />
-    </>
-  )
+    </div>
+  );
 }
+
 
 export default App
