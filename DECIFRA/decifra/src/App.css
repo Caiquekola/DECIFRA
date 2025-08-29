@@ -13,3 +13,18 @@ body {
     color: black;
     text-shadow: 2px 2px 2px rgb(192, 99, 23);
 } */
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;  /* força 100% da tela */
+}
+
+.app-main {
+  flex: 1;            /* ocupa todo o espaço livre */
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* centraliza o jogo na vertical */
+  align-items: center;     /* centraliza na horizontal */
+  overflow: hidden;        /* evita scroll */
+}

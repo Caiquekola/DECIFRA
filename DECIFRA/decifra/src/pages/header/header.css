@@ -1,7 +1,7 @@
 header {
   display: flex;
   align-items: center;
-  justify-content: space-between; /* ícones esquerda | título central | ícones direita */
+  justify-content: space-around; /* ícones esquerda | título central | ícones direita */
   padding: 0.5rem 1rem;           /* menos distância do topo */
   background-color: #212121;
   color: rgb(214, 155, 26);

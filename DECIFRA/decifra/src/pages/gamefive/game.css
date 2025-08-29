@@ -13,6 +13,7 @@
 .container-termoo {
   flex: 1;
   width: 100%;
+  min-height: 90dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -31,6 +32,7 @@
 
 /* Grid de inputs */
 .tituloInputs {
+  margin-top: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -72,7 +74,7 @@ input:focus {
 }
 
 input.focus-visible:focus {
-  border-bottom: 4px solid #FF5722;
+  border-bottom: 4px solid #a2630b;
 }
 
 /* Teclado */
@@ -86,7 +88,7 @@ input.focus-visible:focus {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  margin-bottom: 5px;
+  margin-bottom: 1px;
 }
 
 .key {
@@ -154,12 +156,12 @@ input.focus-visible:focus {
 
 /* Cores de status */
 .correct {
-  background-color: #4caf50 !important; /* verde */
+  background-color: #4caf4fe1 !important; /* verde */
   color: white;
 }
 
 .present {
-  background-color: #ffc107 !important; /* amarelo */
+  background-color: #ffc107f3 !important; /* amarelo */
   color: black;
 }
 
@@ -202,13 +204,13 @@ input.focus-visible:focus {
 }
 
 .key.correct {
-  background-color: #4caf50 !important;
+  background-color: #4caf4f9b !important;
   box-shadow: 0px -3px 2px #18b8282f, 0px 3px 2px #1bb81824;
   color: white;
 }
 
 .key.present {
-  background-color: #ffc107 !important;
+  background-color: #ffc10792 !important;
   box-shadow: 0px -3px 2px #b875182f, 0px 3px 2px #cb941324;
   color: black;
 }
