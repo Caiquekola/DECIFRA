@@ -7,10 +7,15 @@ footer {
   font-size: 12px;
   font-family: 'Roboto', sans-serif;
   font-weight: 300;
+  pointer-events: none;  
   letter-spacing: 1px;
-  z-index: 999;
+  z-index: 0;
   margin: 0;
   padding: 0;
+}
+
+footer a, footer button, footer svg { 
+  pointer-events: auto; 
 }
 
 a {

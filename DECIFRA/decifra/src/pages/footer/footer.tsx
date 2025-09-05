@@ -13,12 +13,12 @@ function Footer(): React.ReactElement {
                 <div>
                     <ul>
                         <li>
-                            <a href="https://www.caiquekola.com.br/">
+                            {/* <a href="https://www.caiquekola.com.br/">
                                Decifra ©  Dia {diffDays} 
-                            </a>
+                            </a> */}
                         </li>
                         <li>
-                            <a href="https://www.caiquekola.com.br"><Github />Caiquekola</a>
+                            <a href="https://www.caiquekola.com.br" target='blank'><Github />Caiquekola</a>
                         </li>
                     </ul>
             </div>

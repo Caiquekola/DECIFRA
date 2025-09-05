@@ -1,9 +1,17 @@
 import React, { useEffect, useState, useRef } from 'react';
 import './game.css';
+import { WORDS_ORIG, WORDS_NORM, WORDS_SET } from './../../data/letras5/palavras';
 
 const WORD_LENGTH = 5;
 const MAX_ATTEMPTS = 6;
-const TARGET_WORD = 'RAIOS';
+// const TARGET_WORD = 'RAIOS';
+const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toUpperCase();
+const today = new Date().getTime();
+const initDay = new Date('09-01-2025').getTime()
+const diffDays = Math.abs(Math.round((today - initDay)/1000/60/60/24))%1000;
+const i = diffDays
+const TARGET_WORD_ORIG = WORDS_ORIG[i];     // para mostrar
+const TARGET_WORD = WORDS_NORM[i];     // para comparar
 
 function Game(): React.ReactElement {
   const [guesses, setGuesses] = useState<string[][]>(
