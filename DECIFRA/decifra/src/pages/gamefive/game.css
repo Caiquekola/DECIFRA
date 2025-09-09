@@ -89,12 +89,9 @@ input.focus-visible:focus {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  margin-bottom: 1px;
 }
 
 .key {
-  margin: 2px;
-  padding: 10px 12px;
   font-size: 16px;
   cursor: pointer;
   text-transform: uppercase;

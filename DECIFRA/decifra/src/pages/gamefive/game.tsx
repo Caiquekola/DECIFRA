@@ -8,7 +8,7 @@ const MAX_ATTEMPTS = 6;
 const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toUpperCase();
 const today = new Date().getTime();
 const initDay = new Date('09-01-2025').getTime()
-const diffDays = Math.abs(Math.round((today - initDay)/1000/60/60/24))%1000;
+const diffDays = Math.abs(Math.round((today - initDay) / 1000 / 60 / 60 / 24)) % 1000;
 const i = diffDays
 const TARGET_WORD_ORIG = WORDS_ORIG[i];     // para mostrar
 const TARGET_WORD = WORDS_NORM[i];     // para comparar
@@ -203,8 +203,6 @@ function Game(): React.ReactElement {
   const handleVirtualKey = (key: string) => {
     if (key === '⌫') {
       handleKeyPress('Backspace');
-    } else if (key === '↪') {
-      handleKeyPress('Enter');
     } else {
       handleKeyPress(key);
     }
@@ -255,7 +253,7 @@ function Game(): React.ReactElement {
                   onFocus={(e) => {
                     if (!isActiveRow) e.target.blur();
                   }}
-                  
+
                 />
               );
             })}
@@ -292,10 +290,11 @@ function Game(): React.ReactElement {
               </button>
             );
           })}
+          <button className="key wide" onClick={() => handleVirtualKey('⌫')}>⌫</button>
+
         </div>
 
         <div className="keyboard-row">
-          <button className="key wide" onClick={() => handleVirtualKey('↪')}>↪</button>
           {'ZXCVBNM'.split('').map((key, i) => {
             const status = keyboardStatus[norm(key)];
             return (
@@ -306,12 +305,10 @@ function Game(): React.ReactElement {
                 >
                   {key}
                 </button>
-                {key === 'M' && (
-                  <button className="key wide" onClick={() => handleVirtualKey('⌫')}>⌫</button>
-                )}
               </React.Fragment>
             );
           })}
+          <button className="key wide" onClick={() => handleKeyPress('Enter')}>Enter</button>
         </div>
       </div>
 
