@@ -46,19 +46,25 @@ function Game(): React.ReactElement {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key;
-
+      e.preventDefault();
       if (key === 'Backspace') {
         handleKeyPress('Backspace');
       } else if (key === 'Enter') {
         handleKeyPress('Enter');
       } else if (/^[a-zA-ZçÇáàâãéèêíïóôõöúñÁÀÂÃÉÈÊÍÏÓÔÕÖÚÑ]$/.test(key)) {
         handleKeyPress(key);
+      } else if (key == ' ' || key == 'Space') {
+        handleKeyPress(' ');
+      } else if (key == 'ArrowLeft') {
+        handleKeyPress('ArrowLeft');
+      } else if (key == 'ArrowRight') {
+        handleKeyPress('ArrowRight');
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  });
+  },);
 
   const norm = (ch: string) =>
     ch.normalize('NFD').replace(/\p{Diacritic}/gu, '').toUpperCase();
@@ -78,28 +84,62 @@ function Game(): React.ReactElement {
     const newGuesses = [...guesses];
     const newStatuses = [...statuses];
 
-    if (/^[a-zA-ZçÇáàâãéèêíïóôõöúñÁÀÂÃÉÈÊÍÏÓÔÕÖÚÑ]$/.test(key) && currentIndex < WORD_LENGTH) {
-      newGuesses[currentAttempt][currentIndex] = key.toUpperCase();
-      setGuesses(newGuesses);
-      setCurrentIndex((prev) => {
-        const next = prev + 1;
-        setTimeout(() => focusInput(currentAttempt, Math.min(next, WORD_LENGTH - 1)), 10);
-        return next;
-      });
+    if (/^[a-zA-ZçÇáàâãéèêíïóôõöúñÁÀÂÃÉÈÊÍÏÓÔÕÖÚÑ]$/.test(key)) {
+      if (currentIndex < WORD_LENGTH) {
+        newGuesses[currentAttempt][currentIndex] = key.toUpperCase();
+        setGuesses(newGuesses);
+        const next = Math.min(currentIndex + 1, WORD_LENGTH - 1);
+        setCurrentIndex(next);
+        setTimeout(() => focusInput(currentAttempt, next), 0);
+      }
+      return;
     }
 
-    if (key === 'Backspace' && currentIndex > 0) {
-      newGuesses[currentAttempt][currentIndex - 1] = '';
-      setGuesses(newGuesses);
-      setCurrentIndex((prev) => {
-        const prevIndex = prev - 1;
-        setTimeout(() => focusInput(currentAttempt, prevIndex), 10);
-        return prevIndex;
-      });
+    if (key === 'ArrowLeft') {
+      if (currentIndex > 0) {
+        const prev = currentIndex - 1;
+        setGuesses(newGuesses);
+        setCurrentIndex(prev);
+        setTimeout(() => focusInput(currentAttempt, prev), 0);
+      }
     }
 
-    if (key === 'Enter' && currentIndex === WORD_LENGTH) {
-      const guess = newGuesses[currentAttempt].join('');
+    if (key === 'ArrowRight') {
+      if (currentIndex < WORD_LENGTH-1) {
+        const prev = currentIndex + 1;
+        setGuesses(newGuesses);
+        setCurrentIndex(prev);
+        setTimeout(() => focusInput(currentAttempt, prev), 0);
+      }
+    }
+
+    if (key === 'Backspace') {
+      if (newGuesses[currentAttempt][currentIndex]) {
+        newGuesses[currentAttempt][currentIndex] = '';
+        setGuesses(newGuesses);
+      } else if (currentIndex > 0) {
+        const prev = currentIndex - 1;
+        newGuesses[currentAttempt][prev] = '';
+        setGuesses(newGuesses);
+        setCurrentIndex(prev);
+        setTimeout(() => focusInput(currentAttempt, prev), 0);
+      }
+      return;
+    }
+
+    if (key === ' ') {
+      const next = Math.min(currentIndex + 1, WORD_LENGTH - 1);
+      setCurrentIndex(next);
+      setTimeout(() => focusInput(currentAttempt, next), 0);
+      return;
+    }
+
+
+    if (key === 'Enter') {
+      const guessArray = newGuesses[currentAttempt];
+      const isFull = guessArray.every(ch => ch && ch.length > 0);
+      if (!isFull) return;
+      const guess = guessArray.join('');
       setFocusEnable(false);
 
       if (guess.length === WORD_LENGTH) {
@@ -249,12 +289,16 @@ function Game(): React.ReactElement {
                   }}
                   className={`letter-box ${status} ${flips[rowIndex][colIndex] ? 'spin' : ''} ${focusEnabled ? 'focus-visible' : ''} ${isActiveRow ? 'active-row' : ''}`}
                   value={letter}
-                  readOnly={!isActiveRow}
-                  onFocus={(e) => {
-                    if (!isActiveRow) e.target.blur();
+                  readOnly
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    if (rowIndex === currentAttempt) {
+                      setCurrentIndex(colIndex);
+                      setTimeout(() => focusInput(rowIndex, colIndex), 0);
+                    }
                   }}
-
                 />
+
               );
             })}
           </div>

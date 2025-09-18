@@ -72,6 +72,7 @@
 input:focus {
   outline: none;
   box-shadow: none;
+  cursor: pointer;
 }
 
 input.focus-visible:focus {
@@ -221,6 +222,10 @@ input.focus-visible:focus {
 
 input {
   caret-color: transparent;
+}
+
+input:hover{
+  cursor: pointer;
 }
 
 /* Estilo base para todas as teclas */
