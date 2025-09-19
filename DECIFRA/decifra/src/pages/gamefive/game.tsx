@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import './game.css';
 import { WORDS_ORIG, WORDS_NORM, WORDS_SET } from './../../data/letras5/palavras';
+import EndModal from '../endgame/EndModal'
+
 
 const WORD_LENGTH = 5;
 const MAX_ATTEMPTS = 6;
@@ -14,6 +16,8 @@ const TARGET_WORD_ORIG = WORDS_ORIG[i];     // para mostrar
 const TARGET_WORD = WORDS_NORM[i];     // para comparar
 
 function Game(): React.ReactElement {
+  const [endModalOpen, setEndModalOpen] = useState(false);
+  const [won, setWon] = useState(false);
   const [guesses, setGuesses] = useState<string[][]>(
     Array(MAX_ATTEMPTS).fill(null).map(() => Array(WORD_LENGTH).fill(''))
   );
@@ -26,7 +30,6 @@ function Game(): React.ReactElement {
   const [currentAttempt, setCurrentAttempt] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [gameOver, setGameOver] = useState(false);
-  const [showModal, setShowModal] = useState(false);
   const [focusEnabled, setFocusEnable] = useState(true);
   const [keyboardStatus, setKeyboardStatus] = useState<{ [key: string]: string }>({});
   const inputRefs = useRef<(HTMLInputElement | null)[][]>(
@@ -41,7 +44,12 @@ function Game(): React.ReactElement {
     const ref = inputRefs.current[row][col];
     if (ref) ref.focus();
   };
-
+  const openEndModal = (didWin: boolean) => {
+    setWon(didWin);
+    setEndModalOpen(true);
+    setGameOver(true);
+  };
+  const closeEndModal = () => setEndModalOpen(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -105,7 +113,7 @@ function Game(): React.ReactElement {
     }
 
     if (key === 'ArrowRight') {
-      if (currentIndex < WORD_LENGTH-1) {
+      if (currentIndex < WORD_LENGTH - 1) {
         const prev = currentIndex + 1;
         setGuesses(newGuesses);
         setCurrentIndex(prev);
@@ -220,11 +228,9 @@ function Game(): React.ReactElement {
               if (i === WORD_LENGTH - 1) {
                 setTimeout(() => {
                   if (guess === TARGET_WORD) {
-                    setShowModal(true);
-                    setGameOver(true);
+                    openEndModal(true);
                   } else if (currentAttempt === MAX_ATTEMPTS - 1) {
-                    alert(`Fim de jogo! A palavra era ${TARGET_WORD}`);
-                    setGameOver(true);
+                    openEndModal(false);
                   } else {
                     const nextAttempt = currentAttempt + 1;
                     setCurrentAttempt(nextAttempt);
@@ -247,7 +253,6 @@ function Game(): React.ReactElement {
       handleKeyPress(key);
     }
   };
-
   const generateShareGrid = () => {
     return statuses
       .slice(0, currentAttempt + 1)
@@ -263,109 +268,114 @@ function Game(): React.ReactElement {
       )
       .join('\n');
   };
+  const shareGrid = generateShareGrid();
 
   const handleShare = async () => {
     const shareText = `Joguei Decifra! 🎉\n\n${generateShareGrid()}`;
     await navigator.clipboard.writeText(shareText);
     alert('Resultado copiado!');
   };
+  const handlePlayYesterday = () => {
+    // TODO: implemente sua lógica (ex.: offset = -1)
+    console.log('Jogar ontem');
+  };
 
+  const handleSecondAction = () => {
+    console.log('Segundo botão');
+  };
 
 
   return (
-    <div className="container-termoo">
-      <div className="tituloInputs">
-        {guesses.map((row, rowIndex) => (
-          <div className="container-inputs" key={rowIndex}>
-            {row.map((letter, colIndex) => {
-              const status = statuses[rowIndex][colIndex];
-              const isActiveRow = rowIndex === currentAttempt;
+    <><EndModal
+      open={endModalOpen}
+      won={won}
+      solution={TARGET_WORD_ORIG}
+      shareGrid={shareGrid}
+      onShare={handleShare}
+      onPlayYesterday={handlePlayYesterday}
+      onSecondAction={handleSecondAction}
+      onClose={closeEndModal} /><div className="container-termoo">
+        <div className="tituloInputs">
+          {guesses.map((row, rowIndex) => (
+            <div className="container-inputs" key={rowIndex}>
+              {row.map((letter, colIndex) => {
+                const status = statuses[rowIndex][colIndex];
+                const isActiveRow = rowIndex === currentAttempt;
+                return (
+                  <input
+                    key={colIndex}
+                    type="text"
+                    ref={(el) => {
+                      inputRefs.current[rowIndex][colIndex] = el;
+                    }}
+                    className={`letter-box ${status} ${flips[rowIndex][colIndex] ? 'spin' : ''} ${focusEnabled ? 'focus-visible' : ''} ${isActiveRow ? 'active-row' : ''}`}
+                    value={letter}
+                    readOnly
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      if (rowIndex === currentAttempt) {
+                        setCurrentIndex(colIndex);
+                        setTimeout(() => focusInput(rowIndex, colIndex), 0);
+                      }
+                    }} />
+
+                );
+              })}
+            </div>
+          ))}
+        </div>
+        {/* TODO: Quando o usuário digita está indo para o primeiro campo */}
+        <div className="keyboard">
+          <div className="keyboard-row">
+            {'QWERTYUIOP'.split('').map((key) => {
+              const status = keyboardStatus[norm(key)];
               return (
-                <input
-                  key={colIndex}
-                  type="text"
-                  ref={(el) => {
-                    inputRefs.current[rowIndex][colIndex] = el;
-                  }}
-                  className={`letter-box ${status} ${flips[rowIndex][colIndex] ? 'spin' : ''} ${focusEnabled ? 'focus-visible' : ''} ${isActiveRow ? 'active-row' : ''}`}
-                  value={letter}
-                  readOnly
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    if (rowIndex === currentAttempt) {
-                      setCurrentIndex(colIndex);
-                      setTimeout(() => focusInput(rowIndex, colIndex), 0);
-                    }
-                  }}
-                />
-
-              );
-            })}
-          </div>
-        ))}
-      </div>
-      {/* TODO: Quando o usuário digita está indo para o primeiro campo */}
-      <div className="keyboard">
-        <div className="keyboard-row">
-          {'QWERTYUIOP'.split('').map((key) => {
-            const status = keyboardStatus[norm(key)];
-            return (
-              <button
-                key={key}
-                className={`key ${status || ''}`}
-                onClick={() => handleVirtualKey(key)}
-              >
-                {key}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="keyboard-row">
-          {'ASDFGHJKL'.split('').map((key) => {
-            const status = keyboardStatus[norm(key)];
-            return (
-              <button
-                key={key}
-                className={`key ${status || ''}`}
-                onClick={() => handleVirtualKey(key)}
-              >
-                {key}
-              </button>
-            );
-          })}
-          <button className="key wide" onClick={() => handleVirtualKey('⌫')}>⌫</button>
-
-        </div>
-
-        <div className="keyboard-row">
-          {'ZXCVBNM'.split('').map((key, i) => {
-            const status = keyboardStatus[norm(key)];
-            return (
-              <React.Fragment key={key}>
                 <button
+                  key={key}
                   className={`key ${status || ''}`}
                   onClick={() => handleVirtualKey(key)}
                 >
                   {key}
                 </button>
-              </React.Fragment>
-            );
-          })}
-          <button className="key wide" onClick={() => handleKeyPress('Enter')}>Enter</button>
-        </div>
-      </div>
+              );
+            })}
+          </div>
 
-      {showModal && (
-        <div className="modal">
-          <div className="modal-content">
-            <h2>🎉 Parabéns!</h2>
-            <p>Você acertou a palavra!</p>
-            <button onClick={handleShare}>Compartilhar</button>
+          <div className="keyboard-row">
+            {'ASDFGHJKL'.split('').map((key) => {
+              const status = keyboardStatus[norm(key)];
+              return (
+                <button
+                  key={key}
+                  className={`key ${status || ''}`}
+                  onClick={() => handleVirtualKey(key)}
+                >
+                  {key}
+                </button>
+              );
+            })}
+            <button className="key wide" onClick={() => handleVirtualKey('⌫')}>⌫</button>
+
+          </div>
+
+          <div className="keyboard-row">
+            {'ZXCVBNM'.split('').map((key, i) => {
+              const status = keyboardStatus[norm(key)];
+              return (
+                <React.Fragment key={key}>
+                  <button
+                    className={`key ${status || ''}`}
+                    onClick={() => handleVirtualKey(key)}
+                  >
+                    {key}
+                  </button>
+                </React.Fragment>
+              );
+            })}
+            <button className="key wide" onClick={() => handleKeyPress('Enter')}>Enter</button>
           </div>
         </div>
-      )}
-    </div>
+      </div></>
   );
 }
 
