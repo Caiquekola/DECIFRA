@@ -1,2 +1,0 @@
-# DECIFRA
-Inspiração: Termo, Wordle
