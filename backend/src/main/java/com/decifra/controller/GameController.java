@@ -8,14 +8,22 @@ import com.decifra.service.GameService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+
 
 @RestController
-@RequestMapping("/api/game")
+@RequestMapping("/game")
 @CrossOrigin(origins = "*") 
 @RequiredArgsConstructor 
 public class GameController {
 
     private final GameService gameService;
+
+    @GetMapping("/")
+    public String getAPI() {
+        return "Decifra API";
+    }
+    
 
     @PostMapping("/start")
     public ResponseEntity<GameSession> startGame(@RequestBody StartGameRequest request) {
