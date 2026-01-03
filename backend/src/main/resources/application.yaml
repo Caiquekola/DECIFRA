@@ -4,8 +4,11 @@ server:
 springdoc:
   api-docs:
     enabled: true
+    path: /v3/api-docs
   swagger-ui:
     enabled: true
+  enable-default-api-docs: true
+  
 spring:
   application:
     name: decifra-api

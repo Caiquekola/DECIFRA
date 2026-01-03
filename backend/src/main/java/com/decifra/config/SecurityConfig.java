@@ -1,3 +1,4 @@
+package com.decifra.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -13,7 +14,8 @@ public class SecurityConfig {
         .requestMatchers(
           "/swagger-ui/**",
           "/swagger-ui.html",
-          "/v3/api-docs/**"
+          "/v3/api-docs/**",
+          "/game/*"
         ).permitAll()
         .anyRequest().authenticated()
       )
