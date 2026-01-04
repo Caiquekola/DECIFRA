@@ -1,4 +1,7 @@
 decifra/node_modules
 */node_modules
+<<<<<<< HEAD
 node_modules
+=======
+>>>>>>> 7d2dbf266a06c6a818849697b820d4fc36d497ba
 .env

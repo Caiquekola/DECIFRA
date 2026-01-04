@@ -1,0 +1,39 @@
+server:
+  port: 8080
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+  enable-default-api-docs: true
+  
+spring:
+  application:
+    name: decifra-api
+  mvc:
+    servlet:
+      path: /api
+  
+  datasource:
+    # Conexão com o Docker (Postgres)
+    url: jdbc:postgresql://localhost:5432/decifra_game
+    username: user_decifra
+    password: password_decifra
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    # Cria/Atualiza as tabelas automaticamente baseadas nas classes Java
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  
+  # Opcional: Melhora o log de erros no console
+  output:
+    ansi:
+      enabled: always

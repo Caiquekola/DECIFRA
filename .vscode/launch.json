@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-DecifraApplication<decifra>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.decifra.DecifraApplication",
+            "projectName": "decifra",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
