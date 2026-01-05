@@ -1,0 +1,14 @@
+package com.decifra.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import com.decifra.model.Word;
+
+@Repository
+public interface WordRepository extends JpaRepository<Word, Long> {
+    @Query(value = "SELECT * FROM words WHERE length = :length ORDER BY RANDOM() LIMIT 1", nativeQuery = true)
+    Word findRandomWordByLength(@Param("length") Integer length);
+}

@@ -1,21 +1,27 @@
 import React, { useEffect, useState, useRef } from 'react';
+import axios, { AxiosError } from 'axios';
 import './game.css';
-import { WORDS_ORIG, WORDS_NORM, WORDS_SET } from './../../data/letras5/palavras';
-import EndModal from '../endgame/EndModal'
+import EndModal from '../endgame/EndModal';
 
+// Configuração da API baseada no seu Controller Java (@RequestMapping("/game"))
+const API_URL = 'http://localhost:8080/api/game';
 
 const WORD_LENGTH = 5;
 const MAX_ATTEMPTS = 6;
-// const TARGET_WORD = 'RAIOS';
-const norm = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toUpperCase();
-const today = new Date().getTime();
-const initDay = new Date('09-01-2025').getTime()
-const diffDays = Math.abs(Math.round((today - initDay) / 1000 / 60 / 60 / 24)) % 1000;
-const i = diffDays
-const TARGET_WORD_ORIG = WORDS_ORIG[i];     // para mostrar
-const TARGET_WORD = WORDS_NORM[i];     // para comparar
+
+// Função auxiliar de normalização
+const norm = (s: string) => s ? s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toUpperCase() : "";
 
 function Game(): React.ReactElement {
+  // --- ESTADOS ---
+  // Dados vindos do Backend
+  const [targetWord, setTargetWord] = useState<string>(''); 
+  const [sessionId, setSessionId] = useState<number | null>(null);
+  
+  // Controle de tempo
+  const [startTime, setStartTime] = useState<number>(0);
+
+  // Estados Visuais e de Jogo
   const [endModalOpen, setEndModalOpen] = useState(false);
   const [won, setWon] = useState(false);
   const [guesses, setGuesses] = useState<string[][]>(
@@ -30,68 +36,149 @@ function Game(): React.ReactElement {
   const [currentAttempt, setCurrentAttempt] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [gameOver, setGameOver] = useState(false);
-  const [focusEnabled, setFocusEnable] = useState(true);
+  const [focusEnabled, setFocusEnable] = useState(false); // Começa travado até carregar a API
   const [keyboardStatus, setKeyboardStatus] = useState<{ [key: string]: string }>({});
+  
   const inputRefs = useRef<(HTMLInputElement | null)[][]>(
-    Array(MAX_ATTEMPTS)
-      .fill(null)
-      .map(() => Array(WORD_LENGTH).fill(null))
+    Array(MAX_ATTEMPTS).fill(null).map(() => Array(WORD_LENGTH).fill(null))
   );
+
+  // --- 1. INICIALIZAÇÃO DO JOGO ---
   useEffect(() => {
+    const initGame = async () => {
+      try {
+        // Gerenciamento simples de ID de usuário
+        let userId = localStorage.getItem('decifra_user_id');
+        if (!userId) {
+          userId = 'user_' + Math.floor(Math.random() * 100000);
+          localStorage.setItem('decifra_user_id', userId);
+        }
+
+        // Chama o endpoint Java: /game/start
+        const response = await axios.post(`${API_URL}/start`, { 
+            userId: userId,
+            wordLength: WORD_LENGTH 
+        });
+        
+        // Configura o jogo com a resposta
+        setSessionId(response.data.sessionId);
+        setTargetWord(response.data.targetWord); // Guarda a palavra secreta localmente
+        setStartTime(Date.now());
+        console.log(response.data.targetWord);
+        // Libera o jogo
+        setFocusEnable(true);
+        setTimeout(() => focusInput(0, 0), 100);
+
+      } catch (error) {
+        console.error("Erro ao conectar no servidor:", error);
+        alert("Erro ao iniciar. Verifique se o Backend Java está rodando na porta 8080.");
+      }
+    };
+
+    // Foca no input inicial
     focusInput(0, 0);
+    initGame();
   }, []);
+
   const focusInput = (row: number, col: number) => {
-    const ref = inputRefs.current[row][col];
-    if (ref) ref.focus();
+    if (inputRefs.current[row] && inputRefs.current[row][col]) {
+      inputRefs.current[row][col]?.focus();
+    }
   };
-  const openEndModal = (didWin: boolean) => {
-    setWon(didWin);
-    setEndModalOpen(true);
+
+  // --- LÓGICA DE VALIDAÇÃO (O Cérebro do Frontend) ---
+  const calculateMatch = (guess: string, target: string) => {
+    const result = Array(WORD_LENGTH).fill('absent');
+    const guessArr = norm(guess).split('');
+    const targetArr = norm(target).split('');
+    const targetUsed = Array(WORD_LENGTH).fill(false);
+
+    // Passo 1: Identificar VERDES (Posição exata)
+    guessArr.forEach((char, i) => {
+      if (char === targetArr[i]) {
+        result[i] = 'correct';
+        targetUsed[i] = true;
+      }
+    });
+
+    // Passo 2: Identificar AMARELOS (Letra existe mas lugar errado)
+    guessArr.forEach((char, i) => {
+      if (result[i] === 'correct') return; // Já resolveu
+
+      // Procura a letra no alvo, desde que não tenha sido usada
+      const foundIndex = targetArr.findIndex((tChar, tIndex) => 
+        tChar === char && !targetUsed[tIndex]
+      );
+
+      if (foundIndex !== -1) {
+        result[i] = 'present';
+        targetUsed[foundIndex] = true; // Marca como usada para não repetir amarelo
+      }
+    });
+
+    return result;
+  };
+
+  // --- FINALIZAR JOGO ---
+  const finishGame = async (isVictory: boolean, attempts: number) => {
+    setWon(isVictory);
     setGameOver(true);
+    setEndModalOpen(true);
+
+    if (sessionId) {
+      try {
+        // Envia métricas para o Java (/game/finish)
+        await axios.post(`${API_URL}/finish`, {
+          sessionId: sessionId,
+          won: isVictory,
+          attemptsUsed: attempts,
+          durationMs: Date.now() - startTime,
+          historyJson: JSON.stringify(guesses.slice(0, attempts))
+        });
+      } catch (err) {
+        console.error("Erro ao salvar estatísticas", err);
+      }
+    }
   };
+
   const closeEndModal = () => setEndModalOpen(false);
 
+  // --- INPUTS FÍSICOS ---
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key;
-      e.preventDefault();
+      // Não previne default globalmente para não bloquear F5/F12, apenas nas chaves do jogo
+      
       if (key === 'Backspace') {
+        e.preventDefault();
         handleKeyPress('Backspace');
       } else if (key === 'Enter') {
+        e.preventDefault();
         handleKeyPress('Enter');
-      } else if (/^[a-zA-ZçÇáàâãéèêíïóôõöúñÁÀÂÃÉÈÊÍÏÓÔÕÖÚÑ]$/.test(key)) {
+      } else if (/^[a-zA-ZçÇáàâãéèêíïóôõöúñÁÀÂÃÉÈÊÍÏÓÔÕÖÚÑ]$/.test(key) && key.length === 1) {
+        e.preventDefault();
         handleKeyPress(key);
-      } else if (key == ' ' || key == 'Space') {
-        handleKeyPress(' ');
-      } else if (key == 'ArrowLeft') {
-        handleKeyPress('ArrowLeft');
-      } else if (key == 'ArrowRight') {
-        handleKeyPress('ArrowRight');
+      } else if (key === ' ' || key === 'Space') {
+         e.preventDefault();
+         // Opcional: tratar espaço
+      } else if (key === 'ArrowLeft') {
+         // Opcional: navegação
+      } else if (key === 'ArrowRight') {
+         // Opcional: navegação
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  },);
+  }); // Dependências removidas para simular comportamento original, mas ideal seria incluir deps.
 
-  const norm = (ch: string) =>
-    ch.normalize('NFD').replace(/\p{Diacritic}/gu, '').toUpperCase();
-
-  const getStatus = (letter: string, index: number): string => {
-    const l = norm(letter);
-    const target = TARGET_WORD.split('').map(norm).join('');
-    const correctLetter = target[index];
-    if (l === correctLetter) return 'correct';
-    if (target.includes(l)) return 'present';
-    return 'absent';
-  };
-
+  // --- LÓGICA PRINCIPAL DE DIGITAÇÃO ---
   const handleKeyPress = (key: string) => {
-    if (gameOver) return;
+    if (gameOver || !focusEnabled) return;
 
     const newGuesses = [...guesses];
-    const newStatuses = [...statuses];
 
+    // 1. Digitação de letras
     if (/^[a-zA-ZçÇáàâãéèêíïóôõöúñÁÀÂÃÉÈÊÍÏÓÔÕÖÚÑ]$/.test(key)) {
       if (currentIndex < WORD_LENGTH) {
         newGuesses[currentAttempt][currentIndex] = key.toUpperCase();
@@ -103,29 +190,14 @@ function Game(): React.ReactElement {
       return;
     }
 
-    if (key === 'ArrowLeft') {
-      if (currentIndex > 0) {
-        const prev = currentIndex - 1;
-        setGuesses(newGuesses);
-        setCurrentIndex(prev);
-        setTimeout(() => focusInput(currentAttempt, prev), 0);
-      }
-    }
-
-    if (key === 'ArrowRight') {
-      if (currentIndex < WORD_LENGTH - 1) {
-        const prev = currentIndex + 1;
-        setGuesses(newGuesses);
-        setCurrentIndex(prev);
-        setTimeout(() => focusInput(currentAttempt, prev), 0);
-      }
-    }
-
+    // 2. Backspace
     if (key === 'Backspace') {
       if (newGuesses[currentAttempt][currentIndex]) {
+        // Apaga atual
         newGuesses[currentAttempt][currentIndex] = '';
         setGuesses(newGuesses);
       } else if (currentIndex > 0) {
+        // Volta e apaga anterior
         const prev = currentIndex - 1;
         newGuesses[currentAttempt][prev] = '';
         setGuesses(newGuesses);
@@ -135,117 +207,95 @@ function Game(): React.ReactElement {
       return;
     }
 
-    if (key === ' ') {
-      const next = Math.min(currentIndex + 1, WORD_LENGTH - 1);
-      setCurrentIndex(next);
-      setTimeout(() => focusInput(currentAttempt, next), 0);
-      return;
-    }
-
-
+    // 3. ENTER - Validação e Animação
     if (key === 'Enter') {
       const guessArray = newGuesses[currentAttempt];
       const isFull = guessArray.every(ch => ch && ch.length > 0);
-      if (!isFull) return;
-      const guess = guessArray.join('');
+      if (!isFull) return; // Só aceita palavra completa
+
+      const guessWord = guessArray.join('');
+      
+      // Bloqueia input durante animação
       setFocusEnable(false);
 
-      if (guess.length === WORD_LENGTH) {
-        // 1) Pré-calcula os statuses da linha
-        const rowStatuses: string[] = [];
-        const norm = (ch: string) =>
-          ch.normalize('NFD').replace(/\p{Diacritic}/gu, '').toUpperCase();
-        const targetNorm = TARGET_WORD.split('').map(norm).join('');
+      // CALCULA AS CORES LOCALMENTE
+      const rowStatuses = calculateMatch(guessWord, targetWord);
 
-        const getStatusDelayed = (letter: string, index: number): string => {
-          const l = norm(letter);
-          const correctLetter = targetNorm[index];
-          if (l === correctLetter) return 'correct';
-          if (targetNorm.includes(l)) return 'present';
-          return 'absent';
-        };
+      // Animação (Flip)
+      const STEP = 300; // Tempo entre cartas
+      const FLIP_TIME = 600; // Duração do giro
 
-        for (let i = 0; i < WORD_LENGTH; i++) {
-          rowStatuses[i] = getStatusDelayed(guess[i], i);
-        }
+      // Limpa status da linha atual antes de revelar
+      setStatuses((prev) => {
+        const copy = prev.map(r => [...r]);
+        copy[currentAttempt] = Array(WORD_LENGTH).fill('');
+        return copy;
+      });
 
-        const STEP = 600;       // intervalo entre as letras (ms)
-        const FLIP_TIME = 600;  // duração do flip; combine com o CSS (.spin)
-
-        /* limpa a linha antes de revelar */
-        setStatuses((prev) => {
-          const copy = prev.map((r) => [...r]);
-          copy[currentAttempt] = Array(WORD_LENGTH).fill('');
-          return copy;
-        });
-
-        /* garante flips false antes de começar */
-        setFlips((prev) => {
-          const copy = prev.map((r) => [...r]);
-          copy[currentAttempt] = Array(WORD_LENGTH).fill(false);
-          return copy;
-        });
-
-        for (let i = 0; i < WORD_LENGTH; i++) {
-          const delay = i * STEP;
-
-          setTimeout(() => {
-            // 1) Inicia o flip dessa célula
+      // Loop de animação carta por carta
+      for (let i = 0; i < WORD_LENGTH; i++) {
+        setTimeout(() => {
+            // Inicia o giro (css .spin)
             setFlips((prev) => {
-              const copy = prev.map((r) => [...r]);
-              copy[currentAttempt][i] = true;
-              return copy;
+                const copy = prev.map(r => [...r]);
+                copy[currentAttempt][i] = true;
+                return copy;
             });
 
-            // 2) Quando o flip terminar, aplica a cor e atualiza teclado
+            // Meio do giro: Revela a cor e atualiza teclado
             setTimeout(() => {
-              // para o flip
-              setFlips((prev) => {
-                const copy = prev.map((r) => [...r]);
-                copy[currentAttempt][i] = false;
-                return copy;
-              });
+                // Para o giro
+                setFlips((prev) => {
+                    const copy = prev.map(r => [...r]);
+                    copy[currentAttempt][i] = false;
+                    return copy;
+                });
 
-              // aplica a cor (status) APÓS flip
-              setStatuses((prev) => {
-                const copy = prev.map((r) => [...r]);
-                copy[currentAttempt][i] = rowStatuses[i];
-                return copy;
-              });
+                // Aplica a cor calculada
+                setStatuses((prev) => {
+                    const copy = prev.map(r => [...r]);
+                    copy[currentAttempt][i] = rowStatuses[i];
+                    return copy;
+                });
 
-              // teclado (mesma lógica de prioridade)
-              const k = norm(guess[i]);
-              const s = rowStatuses[i];
-              setKeyboardStatus((prev) => {
-                const cur = prev[k];
-                if (s === 'correct' || (s === 'present' && cur !== 'correct') || (s === 'absent' && !cur)) {
-                  return { ...prev, [k]: s };
+                // Atualiza Teclado Virtual
+                const k = norm(guessWord[i]);
+                const s = rowStatuses[i];
+                setKeyboardStatus((prev) => {
+                    const cur = prev[k];
+                    // Prioridade de cor: Verde > Amarelo > Cinza
+                    if (s === 'correct' || (s === 'present' && cur !== 'correct') || (s === 'absent' && !cur)) {
+                        return { ...prev, [k]: s };
+                    }
+                    return prev;
+                });
+
+                // Verifica Fim da Tentativa (na última letra)
+                if (i === WORD_LENGTH - 1) {
+                    setTimeout(() => {
+                        const wordIsCorrect = norm(guessWord) === norm(targetWord);
+                        
+                        if (wordIsCorrect) {
+                            finishGame(true, currentAttempt + 1);
+                        } else if (currentAttempt === MAX_ATTEMPTS - 1) {
+                            finishGame(false, MAX_ATTEMPTS);
+                        } else {
+                            // Próxima rodada
+                            const nextAttempt = currentAttempt + 1;
+                            setCurrentAttempt(nextAttempt);
+                            setCurrentIndex(0);
+                            setTimeout(() => focusInput(nextAttempt, 0), 10);
+                            setFocusEnable(true); // Libera input
+                        }
+                    }, 100);
                 }
-                return prev;
-              });
-
-              // 3) Depois da última letra “terminar”, segue o jogo
-              if (i === WORD_LENGTH - 1) {
-                setTimeout(() => {
-                  if (guess === TARGET_WORD) {
-                    openEndModal(true);
-                  } else if (currentAttempt === MAX_ATTEMPTS - 1) {
-                    openEndModal(false);
-                  } else {
-                    const nextAttempt = currentAttempt + 1;
-                    setCurrentAttempt(nextAttempt);
-                    setCurrentIndex(0);
-                    setTimeout(() => focusInput(nextAttempt, 0), 10);
-                    setFocusEnable(true);
-                  }
-                }, 0);
-              }
             }, FLIP_TIME);
-          }, delay);
-        }
+
+        }, i * STEP);
       }
     }
-  }
+  };
+
   const handleVirtualKey = (key: string) => {
     if (key === '⌫') {
       handleKeyPress('Backspace');
@@ -253,48 +303,46 @@ function Game(): React.ReactElement {
       handleKeyPress(key);
     }
   };
+
+  // Funções de compartilhamento (Mantidas)
   const generateShareGrid = () => {
     return statuses
-      .slice(0, currentAttempt + 1)
+      .slice(0, currentAttempt + (gameOver ? 1 : 0)) // Mostra até onde jogou
       .map((row) =>
-        row
-          .map((s) => {
+        row.map((s) => {
             if (s === 'correct') return '🟩';
             if (s === 'present') return '🟨';
             if (s === 'absent') return '⬛';
             return '';
-          })
-          .join('')
-      )
-      .join('\n');
+          }).join('')
+      ).join('\n');
   };
+  
   const shareGrid = generateShareGrid();
-
   const handleShare = async () => {
-    const shareText = `Joguei Decifra! 🎉\n\n${generateShareGrid()}`;
+    const shareText = `Joguei Decifra! 🎉\n\n${shareGrid}`;
     await navigator.clipboard.writeText(shareText);
     alert('Resultado copiado!');
   };
-  const handlePlayYesterday = () => {
-    // TODO: implemente sua lógica (ex.: offset = -1)
-    console.log('Jogar ontem');
-  };
-
-  const handleSecondAction = () => {
-    console.log('Segundo botão');
-  };
-
+  
+  // Mocks para o Modal
+  const handlePlayYesterday = () => console.log('Jogar ontem');
+  const handleSecondAction = () => console.log('Segundo botão');
 
   return (
-    <><EndModal
-      open={endModalOpen}
-      won={won}
-      solution={TARGET_WORD_ORIG}
-      shareGrid={shareGrid}
-      onShare={handleShare}
-      onPlayYesterday={handlePlayYesterday}
-      onSecondAction={handleSecondAction}
-      onClose={closeEndModal} /><div className="container-termoo">
+    <>
+      <EndModal
+        open={endModalOpen}
+        won={won}
+        solution={targetWord} // Passa a palavra real vinda do Java
+        shareGrid={shareGrid}
+        onShare={handleShare}
+        onPlayYesterday={handlePlayYesterday}
+        onSecondAction={handleSecondAction}
+        onClose={closeEndModal} 
+      />
+      
+      <div className="container-termoo">
         <div className="tituloInputs">
           {guesses.map((row, rowIndex) => (
             <div className="container-inputs" key={rowIndex}>
@@ -306,7 +354,9 @@ function Game(): React.ReactElement {
                     key={colIndex}
                     type="text"
                     ref={(el) => {
-                      inputRefs.current[rowIndex][colIndex] = el;
+                      if(inputRefs.current[rowIndex]) {
+                          inputRefs.current[rowIndex][colIndex] = el;
+                      }
                     }}
                     className={`letter-box ${status} ${flips[rowIndex][colIndex] ? 'spin' : ''} ${focusEnabled ? 'focus-visible' : ''} ${isActiveRow ? 'active-row' : ''}`}
                     value={letter}
@@ -317,14 +367,15 @@ function Game(): React.ReactElement {
                         setCurrentIndex(colIndex);
                         setTimeout(() => focusInput(rowIndex, colIndex), 0);
                       }
-                    }} />
-
+                    }} 
+                  />
                 );
               })}
             </div>
           ))}
         </div>
-        {/* TODO: Quando o usuário digita está indo para o primeiro campo */}
+
+        {/* Teclado Virtual */}
         <div className="keyboard">
           <div className="keyboard-row">
             {'QWERTYUIOP'.split('').map((key) => {
@@ -355,11 +406,10 @@ function Game(): React.ReactElement {
               );
             })}
             <button className="key wide" onClick={() => handleVirtualKey('⌫')}>⌫</button>
-
           </div>
 
           <div className="keyboard-row">
-            {'ZXCVBNM'.split('').map((key, i) => {
+            {'ZXCVBNM'.split('').map((key) => {
               const status = keyboardStatus[norm(key)];
               return (
                 <React.Fragment key={key}>
@@ -375,7 +425,8 @@ function Game(): React.ReactElement {
             <button className="key wide" onClick={() => handleKeyPress('Enter')}>Enter</button>
           </div>
         </div>
-      </div></>
+      </div>
+    </>
   );
 }
 

@@ -1,14 +1,19 @@
 package com.decifra.controller;
 
-import com.decifra.dto.GuessRequest;   // Importando do pacote correto
-import com.decifra.dto.GuessResponse;  // Importando do pacote correto
-import com.decifra.dto.StartGameRequest; // Importando do pacote correto
-import com.decifra.model.GameSession;
-import com.decifra.service.GameService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.decifra.dto.GameResultRequest;
+import com.decifra.dto.GameStartResponse;
+import com.decifra.dto.StartGameRequest; // Importando do pacote correto
+import com.decifra.service.GameService;
+
+import lombok.RequiredArgsConstructor;
 
 
 @RestController
@@ -25,21 +30,17 @@ public class GameController {
     }
     
 
+    // Inicia o jogo e entrega a palavra para o cliente
     @PostMapping("/start")
-    public ResponseEntity<GameSession> startGame(@RequestBody StartGameRequest request) {
-        GameSession session = gameService.startNewGame(request.getUserId());
-        return ResponseEntity.ok(session);
+    public ResponseEntity<GameStartResponse> startGame(@RequestBody StartGameRequest request) {
+        return ResponseEntity.ok(gameService.startClientSideGame(request.getUserId(),request.getWordLength()));
     }
 
-    @PostMapping("/guess")
-    public ResponseEntity<GuessResponse> makeGuess(@RequestBody GuessRequest request) {
-        
-        GuessResponse response = gameService.processGuess(
-            request.getSessionId(), 
-            request.getGuessWord()
-        );
-        
-        return ResponseEntity.ok(response);
+    // Recebe o relatório final para o SAD (Sistema de Apoio à Decisão)
+    @PostMapping("/finish")
+    public ResponseEntity<Void> finishGame(@RequestBody GameResultRequest request) {
+        gameService.saveGameResult(request);
+        return ResponseEntity.ok().build();
     }
 }
 

@@ -5,4 +5,5 @@ import lombok.Data;
 @Data
 public class StartGameRequest {
      private String userId;
+     private int wordLength;
 }
