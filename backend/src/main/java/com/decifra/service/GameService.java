@@ -3,8 +3,11 @@ package com.decifra.service;
 import com.decifra.dto.GuessResponse;
 import com.decifra.model.GameSession;
 import com.decifra.model.Guess;
+import com.decifra.model.Word;
 import com.decifra.repository.GameSessionRepository;
-import com.decifra.repository.GuessRepository; // Crie esta interface!
+import com.decifra.repository.GuessRepository;
+import com.decifra.repository.WordRepository;
+
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,24 +21,28 @@ import java.util.List;
 public class GameService {
 
     private final GameSessionRepository sessionRepository;
-    private final GuessRepository guessRepository; // Interface JPA simples
+    private final GuessRepository guessRepository;
+    private final WordRepository wordRepository;
 
-    /**
-     * Inicia uma nova partida
-     */
     @Transactional
     public GameSession startNewGame(String userId) {
         GameSession session = new GameSession();
         session.setUserId(userId);
-        // TODO: Futuramente buscar de um banco de palavras aleatórias
-        session.setTargetWord("TERMO"); 
-        
+
+        Word randomWord = wordRepository.findRandomWord();
+        if (randomWord == null) {
+            session.setTargetWord("TERMO"); // Fallback caso o banco esteja vazio
+        } else {
+            session.setTargetWord(randomWord.getText());
+        }
+
         return sessionRepository.save(session);
     }
 
     /**
      * Processa a tentativa, aplica as regras do jogo e salva no banco.
-     * Este método é o coração do SAD (Sistema de Apoio à Decisão), pois gera os dados.
+     * Este método é o coração do SAD (Sistema de Apoio à Decisão), pois gera os
+     * dados.
      */
     @Transactional
     public GuessResponse processGuess(Long sessionId, String guessWord) {
@@ -55,7 +62,8 @@ public class GameService {
         String guess = guessWord.toUpperCase();
 
         // 3. Algoritmo de Comparação (Lógica do Wordle)
-        // Retorna array de status: ["correct", "absent", "present", "correct", "absent"]
+        // Retorna array de status: ["correct", "absent", "present", "correct",
+        // "absent"]
         List<String> resultPattern = calculateMatch(target, guess);
 
         // 4. Verifica Vitória
@@ -66,9 +74,10 @@ public class GameService {
         newGuess.setGameSession(session);
         newGuess.setWord(guess);
         newGuess.setAttemptNumber(session.getGuesses().size() + 1);
-        // Transforma a lista em String CSV simples para salvar no banco (ex: "correct,absent...")
+        // Transforma a lista em String CSV simples para salvar no banco (ex:
+        // "correct,absent...")
         newGuess.setResultPattern(String.join(",", resultPattern));
-        
+
         guessRepository.save(newGuess);
 
         // 6. Atualiza a Sessão
@@ -112,11 +121,13 @@ public class GameService {
         // Passo 2: Identificar AMARELOS (Letra existe mas posição errada - "present")
         // e CINZAS (Não existe ou já foi usada - "absent")
         for (int i = 0; i < 5; i++) {
-            if (result[i] != null) continue; // Já é verde
+            if (result[i] != null)
+                continue; // Já é verde
 
             boolean found = false;
             for (int j = 0; j < 5; j++) {
-                // Se a letra bate, e a posição j do alvo ainda não foi usada por um verde ou outro amarelo
+                // Se a letra bate, e a posição j do alvo ainda não foi usada por um verde ou
+                // outro amarelo
                 if (!targetUsed[j] && targetChars[j] == guessChars[i]) {
                     result[i] = "present";
                     targetUsed[j] = true;
@@ -129,7 +140,7 @@ public class GameService {
                 result[i] = "absent";
             }
         }
-        
+
         return List.of(result);
     }
 }
