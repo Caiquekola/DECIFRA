@@ -43,6 +43,15 @@ function Game(): React.ReactElement {
     Array(MAX_ATTEMPTS).fill(null).map(() => Array(WORD_LENGTH).fill(null))
   );
 
+  // Função para desistir intencionalmente
+  const handleGiveUp = () => {
+    if (gameOver) return;
+    
+    if (window.confirm("Tem certeza que deseja desistir desta partida?")) {
+      finishGame(false, currentAttempt + 1);
+    }
+  };
+
   // --- 1. INICIALIZAÇÃO DO JOGO ---
   useEffect(() => {
     const initGame = async () => {
@@ -127,7 +136,6 @@ function Game(): React.ReactElement {
 
     if (sessionId) {
       try {
-        // Envia métricas para o Java (/game/finish)
         await axios.post(`${API_URL}/finish`, {
           sessionId: sessionId,
           won: isVictory,

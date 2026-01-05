@@ -7,26 +7,26 @@ import java.util.List;
 
 @Data
 @Entity
-@Table(name = "game_sessions")  
+@Table(name = "game_sessions")
 public class GameSession {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String userId; // Pode ser um UUID gerado no front ou IP (simplificado)
+    private String userId;
 
-    @Column(length = 5, nullable = false)
+    @Column(nullable = false)
     private String targetWord; // A palavra secreta (ex: "TERMO")
+    @Column(name = "attempts_count")
+    private Integer attemptsCount; // Quantas tentativas usou (1 a 6)
 
-    private boolean won; // Se ganhou ou perdeu
+    @Column(name = "duration_seconds")
+    private Long durationSeconds; 
+    private boolean won;
 
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-
-    // Relacionamento 1:N (Uma partida tem várias tentativas)
-    @OneToMany(mappedBy = "gameSession", cascade = CascadeType.ALL)
-    private List<Guess> guesses;
 
     @PrePersist
     public void prePersist() {
