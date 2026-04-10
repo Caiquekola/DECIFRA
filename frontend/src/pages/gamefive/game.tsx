@@ -46,23 +46,18 @@ function Game(): React.ReactElement {
   }, []);
 
   useEffect(() => {
-    const initGame = async () => {
-      try {
-        let userId = localStorage.getItem('decifra_user_id');
-        if (!userId) {
-          userId = 'user_' + Math.floor(Math.random() * 100000);
-          localStorage.setItem('decifra_user_id', userId);
-        }
-
-        const response = await axios.post(`${API_URL}/start`, { userId });
-        setSessionId(response.data.id); // Salva o ID da sessão
-        setFocusEnable(true); // Libera o jogo
-        setTimeout(() => focusInput(0, 0), 100);
-      } catch (error) {
-        console.error("Erro ao conectar no servidor:", error);
-        alert("Erro ao iniciar o jogo. Verifique se o Backend Java está rodando.");
+    const initGame = () => {
+      let userId = localStorage.getItem('decifra_user_id');
+      if (!userId) {
+        userId = 'user_' + Math.floor(Math.random() * 100000);
+        localStorage.setItem('decifra_user_id', userId);
       }
+
+      setSessionId(Math.floor(Math.random() * 9000000000) + 1000000000);
+      setFocusEnable(true); 
+      setTimeout(() => focusInput(0, 0), 100);
     };
+    
     initGame();
   }, []);
 
@@ -178,90 +173,79 @@ function Game(): React.ReactElement {
       if (!isFull) return;
 
       const guessWord = guessArray.join('');
-      setFocusEnable(false); // Trava inputs enquanto chama API
+      setFocusEnable(false); // Trava inputs enquanto processa
 
-      try {
-        // 2. CHAMA O BACKEND JAVA
-        const response = await axios.post(`${API_URL}/guess`, {
-          sessionId: sessionId,
-          guessWord: guessWord
-        });
+      // LÓGICA LOCAL SUBSTITUINDO O BACKEND
+      const rowStatuses = evaluateGuess(guessWord, TARGET_WORD);
+      const isWon = guessWord === TARGET_WORD;
+      const isGameOver = currentAttempt === MAX_ATTEMPTS - 1 && !isWon;
 
-        const data = response.data; // { resultPattern: ["correct", "absent"...], won: boolean, gameOver: boolean }
-        const rowStatuses = data.resultList || data.resultPattern; // Ajuste conforme seu DTO
+      // 3. ANIMAÇÃO (mantida idêntica à sua)
+      const STEP = 300;
+      const FLIP_TIME = 600;
 
-        // 3. ANIMAÇÃO (Mantida sua lógica, usando os dados da API)
-        const STEP = 300;
-        const FLIP_TIME = 600;
+      setStatuses((prev) => {
+        const copy = prev.map((r) => [...r]);
+        copy[currentAttempt] = Array(WORD_LENGTH).fill('');
+        return copy;
+      });
 
-        /* limpa e prepara */
-        setStatuses((prev) => {
-          const copy = prev.map((r) => [...r]);
-          copy[currentAttempt] = Array(WORD_LENGTH).fill('');
-          return copy;
-        });
+      for (let i = 0; i < WORD_LENGTH; i++) {
+        setTimeout(() => {
+          // Flip Start
+          setFlips((prev) => {
+            const copy = prev.map((r) => [...r]);
+            copy[currentAttempt][i] = true;
+            return copy;
+          });
 
-        for (let i = 0; i < WORD_LENGTH; i++) {
+          // Flip End & Reveal Color
           setTimeout(() => {
-            // Flip Start
             setFlips((prev) => {
               const copy = prev.map((r) => [...r]);
-              copy[currentAttempt][i] = true;
+              copy[currentAttempt][i] = false;
               return copy;
             });
 
-            // Flip End & Reveal Color
-            setTimeout(() => {
-              setFlips((prev) => {
-                const copy = prev.map((r) => [...r]);
-                copy[currentAttempt][i] = false;
-                return copy;
-              });
+            setStatuses((prev) => {
+              const copy = prev.map((r) => [...r]);
+              copy[currentAttempt][i] = rowStatuses[i];
+              return copy;
+            });
 
-              setStatuses((prev) => {
-                const copy = prev.map((r) => [...r]);
-                copy[currentAttempt][i] = rowStatuses[i]; // USA O RETORNO DA API
-                return copy;
-              });
-
-              // Atualiza Teclado
-              const k = norm(guessWord[i]);
-              const s = rowStatuses[i];
-              setKeyboardStatus((prev) => {
-                const cur = prev[k];
-                if (s === 'correct' || (s === 'present' && cur !== 'correct') || (s === 'absent' && !cur)) {
-                  return { ...prev, [k]: s };
-                }
-                return prev;
-              });
-
-              // Final da linha
-              if (i === WORD_LENGTH - 1) {
-                setTimeout(() => {
-                  if (data.won) {
-                    setSolutionWord(guessWord); // Opcional
-                    openEndModal(true);
-                  } else if (data.gameOver) {
-                    setSolutionWord("ERROU"); // O backend poderia retornar a palavra certa no final
-                    openEndModal(false);
-                  } else {
-                    const nextAttempt = currentAttempt + 1;
-                    setCurrentAttempt(nextAttempt);
-                    setCurrentIndex(0);
-                    setTimeout(() => focusInput(nextAttempt, 0), 10);
-                    setFocusEnable(true);
-                  }
-                }, 100);
+            // Atualiza Teclado
+            const k = norm(guessWord[i]);
+            const s = rowStatuses[i];
+            setKeyboardStatus((prev) => {
+              const cur = prev[k];
+              if (s === 'correct' || (s === 'present' && cur !== 'correct') || (s === 'absent' && !cur)) {
+                return { ...prev, [k]: s };
               }
-            }, FLIP_TIME);
-          }, i * STEP);
-        }
+              return prev;
+            });
 
-      } catch (error) {
-        console.error("Erro na API", error);
-        alert("Erro ao enviar tentativa. Tente novamente.");
-        setFocusEnable(true);
+            // Final da linha
+            if (i === WORD_LENGTH - 1) {
+              setTimeout(() => {
+                if (isWon) {
+                  setSolutionWord(guessWord);
+                  openEndModal(true);
+                } else if (isGameOver) {
+                  setSolutionWord(TARGET_WORD_ORIG); // Agora temos acesso fácil à resposta
+                  openEndModal(false);
+                } else {
+                  const nextAttempt = currentAttempt + 1;
+                  setCurrentAttempt(nextAttempt);
+                  setCurrentIndex(0);
+                  setTimeout(() => focusInput(nextAttempt, 0), 10);
+                  setFocusEnable(true);
+                }
+              }, 100);
+            }
+          }, FLIP_TIME);
+        }, i * STEP);
       }
+      return; // Fim do bloco Enter
     }
 
 
@@ -305,7 +289,36 @@ function Game(): React.ReactElement {
   const handleSecondAction = () => {
     console.log('Segundo botão');
   };
+  // Função robusta que lida corretamente com letras repetidas
+  const evaluateGuess = (guessWord: string, targetWord: string) => {
+    const guess = guessWord.split('');
+    const target = targetWord.split('');
+    const result = Array(WORD_LENGTH).fill('absent');
 
+    // Array para rastrear quais letras da palavra alvo ainda estão "disponíveis"
+    const availableLetters = [...target];
+
+    // Passagem 1: Encontrar os acertos exatos (verdes)
+    for (let i = 0; i < WORD_LENGTH; i++) {
+      if (guess[i] === target[i]) {
+        result[i] = 'correct';
+        availableLetters[i] = null; // Remove a letra do banco
+      }
+    }
+
+    // Passagem 2: Encontrar os presentes (amarelos)
+    for (let i = 0; i < WORD_LENGTH; i++) {
+      if (result[i] !== 'correct') {
+        const indexInTarget = availableLetters.indexOf(guess[i]);
+        if (indexInTarget !== -1) {
+          result[i] = 'present';
+          availableLetters[indexInTarget] = null; // Gasta essa letra
+        }
+      }
+    }
+
+    return result;
+  };
 
   return (
     <><EndModal
